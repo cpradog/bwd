@@ -24,12 +24,12 @@ all:
 install:
 	install -D -m 755 -t $(bindir) bwd
 	install -D -m 644 -t $(sysconfdir) bwd.conf
-	@sed -i 's|/etc/bwd.conf|$(shell realpath $(sysconfdir))/bwd.conf|' $(bindir)/bwd
+	@sed -i "s|/etc/bwd.conf|$$(realpath $(sysconfdir))/bwd.conf|" $(bindir)/bwd
 
 ifeq ($(HAVE_SYSTEMD),1)
 	install -D -m 644 -t $(systemdunitdir) bwd.service
 	install -D -m 644 -t $(systemdunitdir) bwd.timer
-	@sed -i 's|/usr/bin/bwd|$(shell realpath $(bindir))/bwd|' $(systemdunitdir)/bwd.service
+	@sed -i "s|/usr/bin/bwd|$$(realpath $(bindir))/bwd|" $(systemdunitdir)/bwd.service
 endif
 
 .PHONY: uninstall
