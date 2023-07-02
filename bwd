@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+set -o errexit
+set -o nounset
+set -o pipefail
+
+##!
+# The bing service URL.
+##
+BING_URL=https://www.bing.com
+
+##!
+# The bing market to use.
+# Available codes: https://learn.microsoft.com/en-us/bing/search-apis/bing-image-search/reference/market-codes
+##
+BING_MARKET=es-ES
+
+##!
+# How many images to download at once.
+##
+BING_COUNT=1
+
+##!
+# The local path to store downloaded images.
+##
+WALLPAPERS_DIR=/var/lib/wallpapers
+
+##!
+# Get executable path or show an error.
+#
+# $1 the required executable
+# $output the executable full path
+##
+function require_program {
+    local program=$1
+    local path
+
+    path=$(command -v "${program}" 2>&1)
+
+    if [[ -z "${path}" ]]; then
+        echo "[ERROR] required program not found: ${program}" >&2
+        exit 1
+    fi
+
+    echo "${path}"
+}
+
+#### DEPENDENCIES ####
+CURL=$(require_program curl)
+JQ=$(require_program jq)
+
+##!
+# Load configuration file if available.
+#
+# $1 the configuration file path
+##
+function maybe_load_config {
+    local file_path=$1
+
+    if [[ -f "${file_path}" ]]; then
+        source "${file_path}"
+    fi
+}
+
+##!
+# Retrieve image information from bing service.
+#
+# $output a space separated table with image date and URL columns.
+##
+function get_images {
+    local url=$(printf "%s/HPImageArchive.aspx?format=js&idx=0&n=%d&mkt=%s" "${BING_URL}" "${BING_COUNT}" "${BING_MARKET}")
+    curl -sSLf "${url}" | jq -r ".images[] | .startdate + \" ${BING_URL}\" + .url"
+}
+
+maybe_load_config /etc/bwd.conf
+maybe_load_config "${HOME}/.config/bwd/config"
+
+while read -r image; do
+    image_date=$(echo "${image}" | awk '{print $1}')
+    image_url=$(echo "${image}" | awk '{print $2}')
+    curl -sSLf "${image_url}" --create-dirs --output-dir "${WALLPAPERS_DIR}" -o "bing_${image_date}.jpg"
+done < <(get_images)
