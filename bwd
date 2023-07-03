@@ -43,6 +43,7 @@ BING_URL=https://www.bing.com
 BING_MARKET=es-ES
 BING_COUNT=1
 WALLPAPERS_DIR=/var/lib/wallpapers
+KEEP_DAYS=365
 
 maybe_load_config /etc/bwd.conf
 maybe_load_config "${HOME}/.config/bwd/config"
@@ -55,3 +56,7 @@ done < <(
     ${CURL} -sSLf "$(printf "%s/HPImageArchive.aspx?format=js&idx=0&n=%d&mkt=%s" "${BING_URL}" "${BING_COUNT}" "${BING_MARKET}")" \
         | ${JQ} -r ".images[] | .startdate + \" ${BING_URL}\" + .url"
 )
+
+if [[ ${KEEP_DAYS} -gt 0 ]]; then
+    find "${WALLPAPERS_DIR}" -type f -name 'bing_*' -mtime +${KEEP_DAYS} -delete
+fi
